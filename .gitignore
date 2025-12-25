@@ -1,0 +1,12 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+
+# --- Critical: Data Privacy ---
+#data/
+
+# --- Output Files ---
+# Ignore generated plots/tables so we don't clutter the history
+output/
