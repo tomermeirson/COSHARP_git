@@ -200,3 +200,125 @@ extract.survival.data <- function(dat.temp, NCT.number) {
     rmstd.p = rmstd.p
   ))
 }
+
+#Formatted p-v according to request
+format_p_value <- function(p_value) {
+  if (p_value < 0.001) {
+    return('p < 0.001')
+  } else if (p_value < 0.01) {
+    return(paste0('p = ', round(p_value, 3)))
+  } else {
+    return(paste0('p = ', format(round(p_value, 2), nsmall = 2)))
+  }
+}
+
+plot_3_arm_km <- function(
+  simulated_data,
+  original_data,
+  plot_label,
+  output_path
+) {
+  cox_model <- coxph(Surv(time, status) ~ arm, data = simulated_data)
+
+  # Extract HR and CI
+  hr <- exp(coef(cox_model))
+  hr.lo = summary(cox_model)$conf.int[3]
+  hr.hi = summary(cox_model)$conf.int[4]
+  p_value_cox <- summary(cox_model)$coefficients[, "Pr(>|z|)"]
+
+  annot.hr = paste0(
+    'HR = ',
+    round(hr, 2),
+    ' (',
+    round(hr.lo, 2),
+    '-',
+    round(hr.hi, 2),
+    ');',
+    '\n',
+    format_p_value(p_value_cox)
+  )
+
+  original_data$arm <- as.numeric(as.character(original_data$arm))
+  original_data <- original_data %>% mutate(group = ifelse(arm == 0, 0, 1))
+
+  T0 = simulated_data %>% filter(arm == 0)
+  T0 <- T0 %>% mutate(group = 2)
+
+  dat.full = rbind(original_data, T0)
+  dat.full$group = factor(
+    dat.full$group,
+    levels = c(1, 0, 2),
+    labels = c("Experimental", "Control", "Control counterfactual")
+  )
+  # group=0, arm 0 in original data, group=1, arm 1 in original, group=2, arm 0 in crossover
+
+  KM_full <- survfit(Surv(time, status) ~ group, data = dat.full)
+  time.break = 12
+  f.size = 36
+  f.x = 36
+
+  KM.comb <- KM_full %>%
+    ggsurvplot(
+      dat.full,
+      palette = c('#FC766AFF', 'blue', '#5B84B1FF'),
+      linetype = c("solid", "solid", "dashed"),
+      conf.int = F,
+      risk.table = TRUE,
+      break.time.by = time.break,
+      legend.title = '',
+      # legend.title = "Outcome groups",
+      legend.labs = c("Experimental", "Control", "Control counterfactual"),
+      legend = 'none',
+      # xlim = c(0,88),
+      # legend = "left",
+      ggtheme = theme_survminer(
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 48)
+      ),
+      xlab = 'Time (Months)',
+      #title = 'K-M',
+      fontsize = f.size,
+      font.x = f.x,
+      font.y = f.x,
+      size = 3,
+      risk.table.fontsize = 14
+    )
+
+  KM.comb$plot <- KM.comb$plot +
+    annotate(
+      "text_npc",
+      # x = 10, y = 0.2, # x and y coordinates of the text
+      npcx = 0.05,
+      npcy = 0.1, # x and y coordinates of the text
+      label = annot.hr,
+      size = 14
+    ) +
+    theme(
+      axis.text.x = element_text(size = 36),
+      axis.text.y = element_text(size = 36),
+      axis.title.x = element_text(size = 36),
+      axis.title.y = element_text(size = 36),
+      plot.margin = margin(t = 10, r = 20, b = 10, l = 10)
+    )
+
+  KM.comb$table <- KM.comb$table +
+    theme(
+      text = element_text(size = 36),
+      axis.text.x = element_text(size = 36),
+      axis.title.x = element_text(size = 36),
+      plot.margin = margin(t = 10, r = 20, b = 10, l = 10)
+    )
+  KM.comb$table$theme$axis.text.y$size <- rel(1)
+
+  KM.comb1 = plot_grid(
+    KM.comb$plot,
+    KM.comb$table,
+    nrow = 2,
+    rel_heights = c(3, 1),
+    align = 'hv'
+  )
+  plot(KM.comb1)
+  # ggsave(paste0(output_path,'combined plot', '_', plot_label, '_noNAR.pdf'),print(KM.comb$plot), width = 14,height = 10, scale=1.37)
+
+  # ggsave(paste0(output_path,'combined plot', '_', plot_label, '_NAR.pdf'),print(KM.comb1), width = 14,height = 12, scale=1.37)
+}

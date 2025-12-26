@@ -10,10 +10,13 @@ library(survival)
 library(flexsurv)
 library(simsurv)
 library(survRM2)
+library(survminer)
 library(pbapply)
 library(boot)
 library(clue)
 library(tidyr)
+library(ggpp)
+library(cowplot)
 
 # 2. Source Functions -----------------------------------------------------
 # This loads all the logic from your separate file
@@ -21,7 +24,7 @@ source(here("R", "functions.R"))
 
 # 3. Control Center (Parameters) ------------------------------------------
 SIM_PARAMS <- list(
-  replicates = 2, # Number of simulation runs
+  replicates = 1, # Number of simulation runs
   cross_prop = 0.43, # Proportion of crossover
   HR_subseq = 0.73, # Hazard Ratio for subsequent line
   NCT_number = 'NCT02278120',
@@ -109,3 +112,5 @@ out1 <- cbind(
 
 # 7. Print Results --------------------------------------------------------
 print(out1)
+
+plot_3_arm_km(sim.with.median.hr, dat)
