@@ -1,7 +1,7 @@
-# Survival Analysis: Crossover Adjustment (MONALEESA-7)
+# Survival Analysis: Crossover Adjustment
 
 ## Overview
-This project performs a counterfactual simulation to estimate Overall Survival (OS) adjusted for treatment crossover, using the **MONALEESA-7** trial data (NCT02278120).
+This project performs a counterfactual simulation to estimate Overall Survival (OS) adjusted for treatment crossover, using the **MONALEESA-7** trial data (NCT02278120) as an example.
 
 ## Project Structure
 * `main.R`: The primary execution script. Run this to perform the analysis.
